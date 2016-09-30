@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	width  = 1024
-	height = 768
+	width  = 512
+	height = 384
 )
 
 func init() {
@@ -51,17 +51,21 @@ func main() {
 	}
 	gl.UseProgram(p)
 
-	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 10.0)
+	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 100.0)
 	projUni := gl.GetUniformLocation(p, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projUni, 1, false, &proj[0])
 
-	cam := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	cam := mgl32.LookAtV(mgl32.Vec3{20, 20, 20}, mgl32.Vec3{5, 5, 5}, mgl32.Vec3{0, 1, 0})
 	camUni := gl.GetUniformLocation(p, gl.Str("camera\x00"))
 	gl.UniformMatrix4fv(camUni, 1, false, &cam[0])
 
 	model := mgl32.Ident4()
 	modelUni := gl.GetUniformLocation(p, gl.Str("model\x00"))
 	gl.UniformMatrix4fv(modelUni, 1, false, &model[0])
+
+	col := mgl32.Vec4{0, 0, 0, 1}
+	colUni := gl.GetUniformLocation(p, gl.Str("col\x00"))
+	gl.Uniform4fv(colUni, 1, &col[0])
 
 	gl.BindFragDataLocation(p, 0, gl.Str("outputColor\x00"))
 
@@ -77,33 +81,34 @@ func main() {
 
 	vertAttrib := uint32(gl.GetAttribLocation(p, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
-	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
-
-	texCoordAttrib := uint32(gl.GetAttribLocation(p, gl.Str("tex\x00")))
-	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	// globals
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.8, 0.8, 1.0, 1.0)
 
-	var rot float32
-	prevT := glfw.GetTime()
-
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		t := glfw.GetTime()
-		delta := float32(t - prevT)
-		prevT = t
+		for i := 0; i < 10; i++ {
+			for j := 0; j < 10; j++ {
+				for k := 0; k < 10; k++ {
+					fi := float32(i)
+					fj := float32(j)
+					fk := float32(k)
 
-		rot += delta * 0.1
-		model = mgl32.HomogRotate3D(rot, mgl32.Vec3{0, 1, 0})
+					col = mgl32.Vec4{fi / 10, fj / 10, fk / 10}
+					gl.Uniform4fv(colUni, 1, &col[0])
 
-		gl.UniformMatrix4fv(modelUni, 1, false, &model[0])
-		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+					model = mgl32.Translate3D(fi, fj, fk).Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+
+					gl.UniformMatrix4fv(modelUni, 1, false, &model[0])
+					gl.BindVertexArray(vao)
+					gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+				}
+			}
+		}
 
 		window.SwapBuffers()
 		glfw.PollEvents()
