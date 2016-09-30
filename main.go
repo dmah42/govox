@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"math/rand"
 	"runtime"
 	"strings"
 
@@ -14,10 +15,17 @@ import (
 const (
 	width  = 512
 	height = 384
+
+	size = 20
 )
 
 func init() {
 	runtime.LockOSThread()
+}
+
+type block struct {
+	active bool
+	color  mgl32.Vec4
 }
 
 func main() {
@@ -51,11 +59,11 @@ func main() {
 	}
 	gl.UseProgram(p)
 
-	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 100.0)
+	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 200.0)
 	projUni := gl.GetUniformLocation(p, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projUni, 1, false, &proj[0])
 
-	cam := mgl32.LookAtV(mgl32.Vec3{20, 20, 20}, mgl32.Vec3{5, 5, 5}, mgl32.Vec3{0, 1, 0})
+	cam := mgl32.LookAtV(mgl32.Vec3{50, 40, 70}, mgl32.Vec3{size / 2, size, size / 2}, mgl32.Vec3{0, 1, 0})
 	camUni := gl.GetUniformLocation(p, gl.Str("camera\x00"))
 	gl.UniformMatrix4fv(camUni, 1, false, &cam[0])
 
@@ -88,18 +96,41 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.8, 0.8, 1.0, 1.0)
 
+	// initialize blocks
+	blocks := make([][][]block, size)
+	for i := 0; i < size; i++ {
+		blocks[i] = make([][]block, size)
+		for j := 0; j < size; j++ {
+			blocks[i][j] = make([]block, size)
+			for k := 0; k < size; k++ {
+				blocks[i][j][k] = block{
+					active: (rand.Float32() < 0.5),
+					color: mgl32.Vec4{
+						float32(i) / size,
+						float32(j) / size,
+						float32(k) / size,
+					},
+				}
+			}
+		}
+	}
+
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		for i := 0; i < 10; i++ {
-			for j := 0; j < 10; j++ {
-				for k := 0; k < 10; k++ {
+		for i := 0; i < size; i++ {
+			for j := 0; j < size; j++ {
+				for k := 0; k < size; k++ {
+					b := blocks[i][j][k]
+					if !b.active {
+						continue
+					}
+
+					gl.Uniform4fv(colUni, 1, &b.color[0])
+
 					fi := float32(i)
 					fj := float32(j)
 					fk := float32(k)
-
-					col = mgl32.Vec4{fi / 10, fj / 10, fk / 10}
-					gl.Uniform4fv(colUni, 1, &col[0])
 
 					model = mgl32.Translate3D(fi, fj, fk).Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
 
