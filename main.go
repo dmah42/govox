@@ -106,9 +106,10 @@ func main() {
 				blocks[i][j][k] = block{
 					active: (rand.Float32() < 0.5),
 					color: mgl32.Vec4{
-						float32(i) / size,
-						float32(j) / size,
-						float32(k) / size,
+						rand.Float32(),
+						rand.Float32(),
+						rand.Float32(),
+						1.0,
 					},
 				}
 			}
