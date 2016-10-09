@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -35,8 +35,8 @@ func main() {
 	defer glfw.Terminate()
 
 	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
@@ -116,7 +116,18 @@ func main() {
 		}
 	}
 
+	var rot float32
+
 	for !window.ShouldClose() {
+		// check inputs
+		if window.GetKey(glfw.KeyLeft) == glfw.Press {
+			rot -= 0.1
+		}
+
+		if window.GetKey(glfw.KeyRight) == glfw.Press {
+			rot += 0.1
+		}
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		for i := 0; i < size; i++ {
@@ -133,7 +144,9 @@ func main() {
 					fj := float32(j)
 					fk := float32(k)
 
-					model = mgl32.Translate3D(fi, fj, fk).Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+					model = mgl32.HomogRotate3DY(rot)
+					model = model.Mul4(mgl32.Translate3D(fi, fj, fk))
+					model = model.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
 
 					gl.UniformMatrix4fv(modelUni, 1, false, &model[0])
 					gl.BindVertexArray(vao)
