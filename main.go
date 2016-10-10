@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	width  = 512
-	height = 384
+	width  = 1600
+	height = 900
 
-	size = 20
+	size = 50
 )
 
 func init() {
@@ -40,7 +40,7 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	window, err := glfw.CreateWindow(1024, 768, "govox", nil, nil)
+	window, err := glfw.CreateWindow(width, height, "govox", nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,11 +59,11 @@ func main() {
 	}
 	gl.UseProgram(p)
 
-	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 200.0)
+	proj := mgl32.Perspective(mgl32.DegToRad(45.0), float32(width)/height, 0.1, 1000.0)
 	projUni := gl.GetUniformLocation(p, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projUni, 1, false, &proj[0])
 
-	cam := mgl32.LookAtV(mgl32.Vec3{50, 40, 70}, mgl32.Vec3{size / 2, size, size / 2}, mgl32.Vec3{0, 1, 0})
+	cam := mgl32.LookAtV(mgl32.Vec3{size * 1.8, size * 1.5, size * 2}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
 	camUni := gl.GetUniformLocation(p, gl.Str("camera\x00"))
 	gl.UniformMatrix4fv(camUni, 1, false, &cam[0])
 
@@ -104,7 +104,7 @@ func main() {
 			blocks[i][j] = make([]block, size)
 			for k := 0; k < size; k++ {
 				blocks[i][j][k] = block{
-					active: (rand.Float32() < 0.5),
+					active: (rand.Float32() < 0.1),
 					color: mgl32.Vec4{
 						rand.Float32(),
 						rand.Float32(),
@@ -116,16 +116,24 @@ func main() {
 		}
 	}
 
-	var rot float32
+	var roty, rotx float32
 
 	for !window.ShouldClose() {
 		// check inputs
 		if window.GetKey(glfw.KeyLeft) == glfw.Press {
-			rot -= 0.1
+			roty -= 0.05
 		}
 
 		if window.GetKey(glfw.KeyRight) == glfw.Press {
-			rot += 0.1
+			roty += 0.05
+		}
+
+		if window.GetKey(glfw.KeyUp) == glfw.Press {
+			rotx -= 0.05
+		}
+
+		if window.GetKey(glfw.KeyDown) == glfw.Press {
+			rotx += 0.05
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -140,11 +148,12 @@ func main() {
 
 					gl.Uniform4fv(colUni, 1, &b.color[0])
 
-					fi := float32(i)
-					fj := float32(j)
-					fk := float32(k)
+					fi := float32(i) - size/2
+					fj := float32(j) - size/2
+					fk := float32(k) - size/2
 
-					model = mgl32.HomogRotate3DY(rot)
+					model = mgl32.HomogRotate3DY(roty)
+					model = model.Mul4(mgl32.HomogRotate3DX(rotx))
 					model = model.Mul4(mgl32.Translate3D(fi, fj, fk))
 					model = model.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
 
